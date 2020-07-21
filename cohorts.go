@@ -1,39 +1,39 @@
 package cohorts
 
 import (
-	"hash/maphash"
-	"reflect"
+	"hash"
+	"math/rand"
 	"sync"
 	"unsafe"
+
+	"github.com/minio/highwayhash"
 )
 
 var (
 	_mu           sync.RWMutex
-	_hashFunc     maphash.Hash
+	_hashFunc     hash.Hash64
 	setupHashOnce sync.Once
 )
 
-// _setupH creates an instance of maphash.Hash with a fixed seed, the reason why we need to fix the seed is to ensure
+// _setupH creates an instance of highwayhash with a fixed seed, the reason why we need to fix the seed is to ensure
 // on system restart and on individual instances that id is hashed into the same bucket for deterministic behavior
 func _setupH() {
 	setupHashOnce.Do(func() {
-		// the internal seed value is hidden and has no public setters to be able to do this... soo
-		// we are going to have to set it via reflection and unsafe package ¯\_(ツ)_/¯
-		// internally they have Seed{s: s1<<32 + s2}
-		// where s1 = uint64(runtime_fastrand()) AND s2 = uint64(runtime_fastrand()) ... while  s1|s2 != 0 soo..
 		const seedValueOne = uint64(638976000) << 32
 		const seedValueTwo = uint64(734572800)
-		seedValue := seedValueOne + seedValueTwo
-		var seed maphash.Seed
-		_setUnexportedField(reflect.ValueOf(&seed).Elem().FieldByName("s"), seedValue)
-		_hashFunc.SetSeed(seed)
-	})
-}
 
-func _setUnexportedField(field reflect.Value, value interface{}) {
-	reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).
-		Elem().
-		Set(reflect.ValueOf(value))
+		seedValue := seedValueOne + seedValueTwo
+		key := make([]byte, 32)
+		s := rand.NewSource(int64(seedValue))
+		r := rand.New(s)
+		_, _ = r.Read(key)
+
+		hh, err := highwayhash.New64(key)
+		if err != nil {
+			panic(err)
+		}
+		_hashFunc = hh
+	})
 }
 
 // AssignCohorts returns a Bucket which is a string representation of A,B,or C contingent on the split type
@@ -41,10 +41,10 @@ func AssignCohort(identifier string, splitType SplitType) Bucket {
 	_setupH()
 
 	_mu.Lock()
-	defer _mu.Unlock()
-	_hashFunc.WriteString(identifier)
+	_hashFunc.Write(unsafeGetBytes(identifier))
 	cohort := _hashFunc.Sum64() % uint64(splitType)
 	_hashFunc.Reset()
+	_mu.Unlock()
 	return toBucket(cohort)
 }
 
@@ -56,4 +56,24 @@ func AssignCohortAB(identifier string) Bucket {
 // AssignCohortAB calls AssignCohort and fixes the split type to A/B/C
 func AssignCohortABC(identifier string) Bucket {
 	return AssignCohort(identifier, SplitCohortABC)
+}
+
+// AssignMultipleCohorts generates a bucket that sums the cohort on multiple split types
+// e.g two different tests running on the same user where each test has a different split type assigned
+// e.g users see that a blue banner running an A/B test and users that see cats, dogs, or clowns as an A/B/C where
+// the users are the same and the tests are running at the same time
+func AssignMultipleCohorts(identifier string, splitBy []SplitType) Bucket {
+	buckets := make([]byte, len(splitBy))
+	for i, s := range splitBy {
+		buckets[i] = AssignCohort(identifier, s)[0]
+	}
+	return Bucket(byteSlice2String(buckets))
+}
+
+func unsafeGetBytes(s string) []byte {
+	return *(*[]byte)(unsafe.Pointer(&s))
+}
+
+func byteSlice2String(bs []byte) string {
+	return *(*string)(unsafe.Pointer(&bs))
 }
