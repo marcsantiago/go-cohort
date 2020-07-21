@@ -58,10 +58,12 @@ func AssignCohortABC(identifier string) Bucket {
 	return AssignCohort(identifier, SplitCohortABC)
 }
 
-// AssignMultipleCohorts generates a bucket that sums the cohort on multiple split types
+// AssignMultipleCohorts generates a bucket that merges the cohort on multiple split types
 // e.g two different tests running on the same user where each test has a different split type assigned
-// e.g users see that a blue banner running an A/B test and users that see cats, dogs, or clowns as an A/B/C where
-// the users are the same and the tests are running at the same time
+// users see that a blue banner running an A/B test and users that see cats, dogs, or clowns as an A/B/C where
+// the users are the same and the tests are running at the same time but the spit is different, test 1 the user is assigned
+// bucket A and in test 2 the user is a assigned bucket C, so we return AC as the bucket type. Buckets are always sorted so
+// A will represent that status on A/B testing and C on A/B/C testing
 func AssignMultipleCohorts(identifier string, splitBy []SplitType) Bucket {
 	splitBy = filterDuplicatedBuckets(splitBy)
 	buckets := make([]byte, len(splitBy))
