@@ -140,6 +140,11 @@ func TestAssignMultipleCohorts(t *testing.T) {
 			args: args{id: "94b58aab-fca2-4050-b0c6-119d7c1f59ca", splitBy: []SplitType{SplitCohortAB, SplitCohortABC}},
 			want: Bucket("AC"),
 		},
+		{
+			name: "should remove duplicated splits and return a single split type bucket of an A/B",
+			args: args{id: "94b58aab-fca2-4050-b0c6-119d7c1f59ca", splitBy: []SplitType{SplitCohortAB, SplitCohortAB}},
+			want: Bucket("A"),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

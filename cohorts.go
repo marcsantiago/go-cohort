@@ -63,6 +63,7 @@ func AssignCohortABC(identifier string) Bucket {
 // e.g users see that a blue banner running an A/B test and users that see cats, dogs, or clowns as an A/B/C where
 // the users are the same and the tests are running at the same time
 func AssignMultipleCohorts(identifier string, splitBy []SplitType) Bucket {
+	splitBy = filterDuplicatedBuckets(splitBy)
 	buckets := make([]byte, len(splitBy))
 	for i, s := range splitBy {
 		buckets[i] = AssignCohort(identifier, s)[0]
