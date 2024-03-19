@@ -15,7 +15,7 @@ var (
 	setupHashOnce sync.Once
 )
 
-// _setupH creates an instance of highwayhash with a fixed seed, the reason why we need to fix the seed is to ensure
+// _setupH creates an instance of highway hash with a fixed seed, the reason why we need to fix the seed is to ensure
 // on system restart and on individual instances that id is hashed into the same bucket for deterministic behavior
 func _setupH() {
 	setupHashOnce.Do(func() {
@@ -36,7 +36,7 @@ func _setupH() {
 	})
 }
 
-// AssignCohorts returns a Bucket which is a string representation of A,B,or C contingent on the split type
+// AssignCohort AssignCohorts returns a Bucket which is a string representation of A,B,or C contingent on the split type
 func AssignCohort(identifier string, splitType SplitType) Bucket {
 	_setupH()
 
@@ -53,16 +53,16 @@ func AssignCohortAB(identifier string) Bucket {
 	return AssignCohort(identifier, SplitCohortAB)
 }
 
-// AssignCohortAB calls AssignCohort and fixes the split type to A/B/C
+// AssignCohortABC AssignCohortAB calls AssignCohort and fixes the split type to A/B/C
 func AssignCohortABC(identifier string) Bucket {
 	return AssignCohort(identifier, SplitCohortABC)
 }
 
 // AssignMultipleCohorts generates a bucket that merges the cohort on multiple split types
-// e.g two different tests running on the same user where each test has a different split type assigned
+// e.g. two different tests running on the same user where each test has a different split type assigned
 // users see that a blue banner running an A/B test and users that see cats, dogs, or clowns as an A/B/C where
 // the users are the same and the tests are running at the same time but the spit is different, test 1 the user is assigned
-// bucket A and in test 2 the user is a assigned bucket C, so we return AC as the bucket type. Buckets are always sorted so
+// bucket A and in test 2 the user is an assigned bucket C, so we return AC as the bucket type. Buckets are always sorted so
 // A will represent that status on A/B testing and C on A/B/C testing
 func AssignMultipleCohorts(identifier string, splitBy []SplitType) Bucket {
 	splitBy = filterDuplicatedBuckets(splitBy)
@@ -73,10 +73,16 @@ func AssignMultipleCohorts(identifier string, splitBy []SplitType) Bucket {
 	return Bucket(byteSlice2String(buckets))
 }
 
-func unsafeGetBytes(s string) []byte {
-	return *(*[]byte)(unsafe.Pointer(&s))
+func unsafeGetBytes(s string) (b []byte) {
+	if s == "" {
+		return nil
+	}
+	return unsafe.Slice(unsafe.StringData(s), len(s))
 }
 
 func byteSlice2String(bs []byte) string {
-	return *(*string)(unsafe.Pointer(&bs))
+	if len(bs) == 0 {
+		return ""
+	}
+	return unsafe.String(unsafe.SliceData(bs), len(bs))
 }

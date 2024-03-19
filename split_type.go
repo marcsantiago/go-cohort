@@ -4,7 +4,7 @@ import "sort"
 
 type SplitType int8
 
-// returns -1 because when using the value in mod math the split will always be 0 and therefore fall into group A without a B group
+// SplitTypeUnknown returns -1 because when using the value in mod math the split will always be 0 and therefore fall into group A without a B group
 // this in turn means the split is not running, but also nothing is panicking or breaking.
 const SplitTypeUnknown = SplitType(-1)
 
@@ -13,7 +13,7 @@ const (
 	SplitCohortABC
 )
 
-// Buckets is an alias for []Bucket with the sort interface implemented
+// SplitTypes Buckets is an alias for []Bucket with the sort interface implemented
 type SplitTypes []SplitType
 
 func (s SplitTypes) Len() int           { return len(s) }

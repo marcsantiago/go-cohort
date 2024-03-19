@@ -1,2 +1,2 @@
-//A simple data-science package, which allows deterministic hashes to segment data by cohort
+// Package cohorts is a simple data-science package that allows deterministic hashes to segment data by cohort
 package cohorts
