@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/google/uuid"
 )
 
 func TestSplitByAdvertisingIDDistributionAB(t *testing.T) {
@@ -16,7 +16,7 @@ func TestSplitByAdvertisingIDDistributionAB(t *testing.T) {
 	)
 	cohorts := make(map[Bucket]int)
 	for i := 0; i < totalCount; i++ {
-		id := uuid.NewV4()
+		id := uuid.New()
 		bucket := AssignCohort(id.String(), SplitCohortAB)
 		cohorts[bucket]++
 	}
@@ -54,7 +54,7 @@ func TestSplitByAdvertisingIDDistributionABC(t *testing.T) {
 	)
 	cohorts := make(map[Bucket]int)
 	for i := 0; i < totalCount; i++ {
-		id := uuid.NewV4()
+		id := uuid.New()
 		bucket := AssignCohort(id.String(), SplitCohortABC)
 		cohorts[bucket]++
 	}
@@ -92,7 +92,7 @@ func TestSplitByAdvertisingIDDistributionABC(t *testing.T) {
 func TestAssignCohortSameness(t *testing.T) {
 	const totalCount = 100000
 	for i := 0; i < totalCount; i++ {
-		id := uuid.NewV4()
+		id := uuid.New()
 		bucket := AssignCohortAB(id.String())
 		bucketTwo := AssignCohortAB(id.String())
 		if bucket != bucketTwo {
@@ -157,22 +157,22 @@ func TestAssignMultipleCohorts(t *testing.T) {
 
 var TestBucket Bucket
 
-//BenchmarkAssignCohort-12             	 8522774	       138 ns/op	      48 B/op	       1 allocs/op
-//BenchmarkAssignCohort-12             	 8827146	       140 ns/op	      48 B/op	       1 allocs/op
-//BenchmarkAssignCohort-12             	 8637229	       138 ns/op	      48 B/op	       1 allocs/op
+// BenchmarkAssignCohort-12             	 8522774	       138 ns/op	      48 B/op	       1 allocs/op
+// BenchmarkAssignCohort-12             	 8827146	       140 ns/op	      48 B/op	       1 allocs/op
+// BenchmarkAssignCohort-12             	 8637229	       138 ns/op	      48 B/op	       1 allocs/op
 func BenchmarkAssignCohort(b *testing.B) {
-	id := uuid.NewV4()
+	id := uuid.New()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		TestBucket = AssignCohort(id.String(), SplitCohortAB)
 	}
 }
 
-//BenchmarkAssignMultipleCohorts-12    	 4839728	       240 ns/op	      50 B/op	       2 allocs/op
-//BenchmarkAssignMultipleCohorts-12    	 4934342	       241 ns/op	      50 B/op	       2 allocs/op
-//BenchmarkAssignMultipleCohorts-12    	 4914852	       250 ns/op	      50 B/op	       2 allocs/op
+// BenchmarkAssignMultipleCohorts-12    	 4839728	       240 ns/op	      50 B/op	       2 allocs/op
+// BenchmarkAssignMultipleCohorts-12    	 4934342	       241 ns/op	      50 B/op	       2 allocs/op
+// BenchmarkAssignMultipleCohorts-12    	 4914852	       250 ns/op	      50 B/op	       2 allocs/op
 func BenchmarkAssignMultipleCohorts(b *testing.B) {
-	id := uuid.NewV4()
+	id := uuid.New()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		TestBucket = AssignMultipleCohorts(id.String(), []SplitType{SplitCohortAB, SplitCohortABC})
