@@ -1,6 +1,6 @@
 
 
-# cohorts ![Go](https://github.com/marcsantiago/go-cohort/workflows/Go/badge.svg?branch=master)
+# cohorts [![Go](https://github.com/marcsantiago/go-cohort/actions/workflows/go.yml/badge.svg)](https://github.com/marcsantiago/go-cohort/actions/workflows/go.yml)
 `import "github.com/marcsantiago/go-cohort"`
 
 * [Overview](#pkg-overview)
