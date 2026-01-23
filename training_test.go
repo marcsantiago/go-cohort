@@ -92,7 +92,7 @@ func TestNewTrainingSplit_Panic(t *testing.T) {
 			}()
 
 			// call constructor expected to panic
-			_ = NewTrainingSplit(tt.args.splitPercent, SplitType(0), nil, nil, nil)
+			_ = NewTrainingSplit(tt.args.splitPercent, SplitType(0), nil)
 		})
 	}
 }
@@ -100,8 +100,8 @@ func TestNewTrainingSplit_Panic(t *testing.T) {
 func TestRunWithTraining(t *testing.T) {
 	type fields struct {
 		cohortRemapper CohortMapper
-		onSplit        TrainingAction
-		onNormal       TrainingAction
+		normalAction   TrainingAction
+		splitAction    TrainingAction
 		rng            func() float64
 		splitPercent   float64
 		splitType      SplitType
@@ -123,10 +123,10 @@ func TestRunWithTraining(t *testing.T) {
 			name: "splitPercent 0 runs normal action and returns unspecified bucket",
 			fields: fields{
 				cohortRemapper: nil,
-				onSplit: func() float64 {
+				splitAction: func() float64 {
 					return 123.0
 				},
-				onNormal: func() float64 {
+				normalAction: func() float64 {
 					return 3.14
 				},
 				rng:          func() float64 { return 0.0 },
@@ -148,10 +148,10 @@ func TestRunWithTraining(t *testing.T) {
 			name: "splitPercent 1 runs split action and returns an assigned bucket",
 			fields: fields{
 				cohortRemapper: nil,
-				onSplit: func() float64 {
+				splitAction: func() float64 {
 					return 2.71
 				},
-				onNormal:     func() float64 { return 0.0 },
+				normalAction: func() float64 { return 0.0 },
 				rng:          nil,
 				splitPercent: 1.0,
 				splitType:    SplitCohortAB,
@@ -171,10 +171,10 @@ func TestRunWithTraining(t *testing.T) {
 			name: "intermediate split with rng forcing split (rng < splitPercent)",
 			fields: fields{
 				cohortRemapper: nil,
-				onSplit: func() float64 {
+				splitAction: func() float64 {
 					return 7.7
 				},
-				onNormal:     func() float64 { return 0.0 },
+				normalAction: func() float64 { return 0.0 },
 				rng:          func() float64 { return 0.0 },
 				splitPercent: 0.5,
 				splitType:    SplitCohortAB,
@@ -194,8 +194,8 @@ func TestRunWithTraining(t *testing.T) {
 			name: "intermediate split with rng avoiding split (rng >= splitPercent)",
 			fields: fields{
 				cohortRemapper: nil,
-				onSplit:        func() float64 { return 9.9 },
-				onNormal:       func() float64 { return 6.6 },
+				splitAction:    func() float64 { return 9.9 },
+				normalAction:   func() float64 { return 6.6 },
 				rng:            func() float64 { return 0.99 },
 				splitPercent:   0.5,
 				splitType:      SplitCohortAB,
@@ -217,10 +217,10 @@ func TestRunWithTraining(t *testing.T) {
 				cohortRemapper: CohortMapper{
 					Bucket("B"): Bucket("remapped"),
 				},
-				onSplit: func() float64 {
+				splitAction: func() float64 {
 					return 1.23
 				},
-				onNormal:     func() float64 { return 0.0 },
+				normalAction: func() float64 { return 0.0 },
 				rng:          func() float64 { return 0.0 },
 				splitPercent: 0.5,
 				splitType:    SplitCohortAB,
@@ -243,8 +243,6 @@ func TestRunWithTraining(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ts := &TrainingSplit{
 				cohortRemapper: tt.fields.cohortRemapper,
-				onSplit:        tt.fields.onSplit,
-				onNormal:       tt.fields.onNormal,
 				rng:            tt.fields.rng,
 				splitPercent:   tt.fields.splitPercent,
 				splitType:      tt.fields.splitType,
@@ -253,7 +251,7 @@ func TestRunWithTraining(t *testing.T) {
 				ts.rng = rand.Float64
 			}
 
-			gotBucket, gotVal := ts.RunWithTraining(tt.args.targetableID)
+			gotBucket, gotVal := ts.RunWithTraining(tt.args.targetableID, tt.fields.normalAction, tt.fields.splitAction)
 
 			if gotVal != tt.want.value {
 				t.Fatalf("RunWithTraining() value = %v, want %v", gotVal, tt.want.value)
@@ -287,8 +285,6 @@ func BenchmarkRunWithTraining(b *testing.B) {
 		0.5,
 		SplitCohortABC,
 		nil,
-		func() float64 { return 1.0 },
-		func() float64 { return 0.0 },
 	)
 
 	ts.rng = rand.Float64
@@ -296,6 +292,6 @@ func BenchmarkRunWithTraining(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, _ = ts.RunWithTraining("bench-id")
+		_, _ = ts.RunWithTraining("bench-id", func() float64 { return 1.0 }, func() float64 { return 0.0 })
 	}
 }
