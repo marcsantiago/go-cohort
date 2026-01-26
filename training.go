@@ -42,6 +42,9 @@ type TrainingSplit struct {
 	splitType      SplitType      // The type of cohorting strategy used for bucket assignment
 }
 
+// Option applies optional configuration to a TrainingSplit.
+type Option func(*TrainingSplit)
+
 // NewTrainingSplit creates a new TrainingSplit instance with the provided configuration.
 //
 // The splitPercent must be between 0.0 and 1.0 inclusive, where:
@@ -56,15 +59,32 @@ type TrainingSplit struct {
 func NewTrainingSplit(splitPercent float64,
 	splitType SplitType,
 	remapper CohortMapper,
+	options ...Option,
 ) *TrainingSplit {
 	if splitPercent < 0 || splitPercent > 1 {
 		panic("splitPercent must be between 0.0 and 1.0")
 	}
-	return &TrainingSplit{
+	t := &TrainingSplit{
 		cohortRemapper: remapper,
 		rng:            rand.Float64,
 		splitPercent:   splitPercent,
 		splitType:      splitType,
+	}
+	for _, option := range options {
+		option(t)
+	}
+	return t
+}
+
+// WithCustomRng overrides the default random number generator used by
+// TrainingSplit when deciding whether to assign an entity to the training cohort.
+//
+// The provided rng function must return a float64 in the range [0.0, 1.0).
+// This is useful for testing (e.g., deterministic behavior) or for injecting
+// a custom source of randomness.
+func WithCustomRng(rng func() float64) Option {
+	return func(t *TrainingSplit) {
+		t.rng = rng
 	}
 }
 
